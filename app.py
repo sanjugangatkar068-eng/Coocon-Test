@@ -19,6 +19,7 @@ load_dotenv()
 from image_analysis import (
     validate_image_bytes,
     analyze_cocoon_image,
+    normalize_api_key,
 )
 from scoring import (
     calculate_cocoon_grade,
@@ -162,7 +163,7 @@ with st.sidebar:
     st.title("⚙️ Configuration")
 
     # API Key check and manual entry option
-    env_key = get_config("SARVAM_API_KEY")
+    env_key = normalize_api_key(get_config("SARVAM_API_KEY"))
     has_env_key = bool(env_key and env_key != "your_sarvam_api_key_here")
     if os.getenv("SARVAM_API_KEY", "").strip():
         _key_source = "environment / .env"
@@ -388,7 +389,7 @@ with tab_inspect:
 
                 if st.button("🚀 Activate & Run Analysis", type="primary", use_container_width=True):
                     if direct_key_input and direct_key_input.strip():
-                        clean_k = direct_key_input.strip()
+                        clean_k = normalize_api_key(direct_key_input)
                         st.session_state["api_key"] = clean_k
                         if save_env_choice:
                             try:

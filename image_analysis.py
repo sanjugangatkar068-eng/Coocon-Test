@@ -192,9 +192,27 @@ def parse_and_validate_ai_json(json_text: str) -> Tuple[bool, Dict[str, Any], st
 # ---------------------------------------------------------------------------
 # Provider helpers (Sarvam AI)
 # ---------------------------------------------------------------------------
+def normalize_api_key(value: Optional[str]) -> str:
+    """
+    Clean up common copy/paste artifacts from an API key:
+    surrounding whitespace, wrapping quotes, and stray backslashes
+    (e.g. "sk\\_abc" pasted out of a formatted/markdown message).
+
+    A valid Sarvam key only ever contains letters, digits, '_' and '-', so
+    stripping a backslash can never corrupt a real key.
+    """
+    if not value:
+        return ""
+    key = str(value).strip()
+    if len(key) >= 2 and key[0] in ('"', "'") and key[-1] == key[0]:
+        key = key[1:-1].strip()
+    key = key.replace("\\", "").strip()
+    return key
+
+
 def _get_effective_key(api_key: Optional[str] = None) -> str:
     """Resolve the Sarvam API key from the argument, then the environment."""
-    return (api_key or os.getenv("SARVAM_API_KEY", "")).strip()
+    return normalize_api_key(api_key or os.getenv("SARVAM_API_KEY", ""))
 
 
 def _is_valid_key(effective_key: str) -> bool:

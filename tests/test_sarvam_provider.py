@@ -123,3 +123,32 @@ def test_image_to_data_uri_prefix():
     uri = _image_to_data_uri(img)
     assert uri.startswith("data:image/jpeg;base64,")
     assert len(uri) > 50
+
+
+def test_normalize_api_key_strips_copy_artifacts():
+    """Backslashes, wrapping quotes and stray whitespace are cleaned up."""
+    from image_analysis import normalize_api_key
+    assert normalize_api_key(r"sk\_abc\_def") == "sk_abc_def"
+    assert normalize_api_key('  "sk_abc_def"  ') == "sk_abc_def"
+    assert normalize_api_key("  sk_abc_def  ") == "sk_abc_def"
+    assert normalize_api_key("sk_abc_def") == "sk_abc_def"
+    assert normalize_api_key("") == ""
+    assert normalize_api_key(None) == ""
+
+
+def test_backslash_key_is_normalized_before_being_sent(monkeypatch):
+    """A key pasted as sk\\_abc must reach the API as sk_abc."""
+    _no_network_models(monkeypatch)
+    captured = {}
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        captured["headers"] = headers
+        return FakeResp(200, _good_body(VALID_JSON))
+
+    monkeypatch.setattr(image_analysis.requests, "post", fake_post)
+
+    img = Image.new("RGB", (80, 80), (255, 255, 255))
+    ok, data, err = analyze_cocoon_image(img, api_key=r"sk\_test\_1234567890")
+
+    assert ok is True
+    assert captured["headers"]["api-subscription-key"] == "sk_test_1234567890"
