@@ -56,14 +56,20 @@ def main() -> int:
     raw = os.getenv("SARVAM_API_KEY", "")
     key = raw.strip()
 
+    has_backslash = "\\" in key
     print(f"SARVAM_API_KEY present:    {bool(key)}")
     if key:
         has_quotes = key[:1] in ('"', "'") or key[-1:] in ('"', "'")
+        allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+        unexpected = sorted({c for c in key if c not in allowed})
+        unexpected_str = " ".join(repr(c) for c in unexpected) if unexpected else "none"
         print(f"  masked:                  {mask(key)}")
         print(f"  length:                  {len(key)} characters")
         print(f"  starts with 'sk_':       {key.startswith('sk_')}")
         print(f"  surrounding whitespace:  {'YES (problem!)' if raw != key else 'no'}")
         print(f"  wrapped in quotes:       {'YES (problem!)' if has_quotes else 'no'}")
+        print(f"  contains backslashes:    {'YES (problem!)' if has_backslash else 'no'}")
+        print(f"  unexpected characters:   {unexpected_str}")
         print(f"  contains non-ASCII:      {'YES (problem!)' if any(ord(c) > 127 for c in key) else 'no'}")
         print(f"  contains inner spaces:   {'YES (problem!)' if ' ' in key else 'no'}")
     print(f"SARVAM_MODEL:              {MODEL}")
@@ -124,6 +130,14 @@ def main() -> int:
             print("   2. The key was rotated/regenerated - use the current one.")
             print("   3. Extra characters: quotes, spaces, or a trailing newline.")
             print("   4. The key was deleted, or the workspace changed.")
+            if has_backslash:
+                print()
+                print("  ** THIS KEY CONTAINS BACKSLASHES. Remove them. **")
+                print("     Keys use plain underscores, never backslash-underscore.")
+                print("     correct:  SARVAM_API_KEY=sk_abc123_def456")
+                print("     wrong:    SARVAM_API_KEY=sk\\_abc123\\_def456")
+                print("     (This usually happens when copying from a formatted/markdown")
+                print("      message, which escapes underscores as \\_.)")
             print("  Get a fresh key at https://dashboard.sarvam.ai and paste it into .env.")
             return 1
 
