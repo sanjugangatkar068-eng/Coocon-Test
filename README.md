@@ -139,6 +139,24 @@ The browser will automatically open at:
 http://localhost:8501
 ```
 
+### Troubleshooting: "Sarvam rejected the API key"
+
+If the app reports an auth failure, test the key in isolation first:
+
+```powershell
+python check_key.py
+```
+
+It prints the key's length and shape (masked), whether `.env` was found, and the raw HTTP
+result - enough to tell a typo from a rotated key. The output is safe to share.
+
+> Note: Sarvam's `/v2/models` endpoint does **not** authenticate - it returns 200 even for a
+> bad key. Only a chat completion proves the key works, which is what `check_key.py` does.
+
+If `check_key.py` says the key works but the app still fails, you likely edited `.env`
+without restarting Streamlit: press `Ctrl+C` in the terminal and run `streamlit run app.py`
+again.
+
 ---
 
 ## 8. Running the Test Suite

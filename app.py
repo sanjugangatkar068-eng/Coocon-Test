@@ -37,6 +37,23 @@ from batch import (
     batch_report_to_csv,
 )
 
+
+# ---------------------------------------------------------
+def get_config(name: str, default: str = "") -> str:
+    """
+    Read a configuration value from the environment, then from Streamlit
+    secrets (which is how keys are supplied on Streamlit Community Cloud).
+    Always returns a stripped string.
+    """
+    value = os.getenv(name, "")
+    if not value:
+        try:
+            value = st.secrets.get(name, "")  # type: ignore[attr-defined]
+        except Exception:
+            value = ""
+    return str(value or default).strip()
+
+
 # ---------------------------------------------------------
 # Page Configuration & Styling
 # ---------------------------------------------------------
@@ -145,8 +162,14 @@ with st.sidebar:
     st.title("⚙️ Configuration")
 
     # API Key check and manual entry option
-    env_key = os.getenv("SARVAM_API_KEY", "").strip()
+    env_key = get_config("SARVAM_API_KEY")
     has_env_key = bool(env_key and env_key != "your_sarvam_api_key_here")
+    if os.getenv("SARVAM_API_KEY", "").strip():
+        _key_source = "environment / .env"
+    elif env_key:
+        _key_source = "Streamlit secrets"
+    else:
+        _key_source = "not set"
 
     if has_env_key:
         st.success("✅ SARVAM_API_KEY detected from environment.")
@@ -168,7 +191,7 @@ with st.sidebar:
     # Sarvam's image-capable model is `gemma4` (Gemma 4 31B, text + image input).
     # The other Sarvam chat models (sarvam-105b, glm5.3, deepseekv4.1-flash) are
     # text-only and cannot read a photograph.
-    default_model = os.getenv("SARVAM_MODEL", "").strip()
+    default_model = get_config("SARVAM_MODEL")
     model_options = [
         "gemma4",
         "Custom model name...",
@@ -792,7 +815,8 @@ with tab_diagnostics:
         st.write(f"- Python Runtime: 3.13")
         st.write(f"- Multimodal Vision Provider: Sarvam AI (Chat Completion V2)")
         st.write(f"- Active Model: `{selected_model}`")
-        st.write(f"- API Key Configured: `{'Yes (Valid length)' if user_api_key else 'No'}`")
+        st.write(f"- API Key Configured: `{'Yes' if user_api_key else 'No'}` (length: {len(user_api_key)} chars)")
+        st.write(f"- Key Source: `{_key_source}`")
         st.write(f"- In-Memory Image Buffer: Active (Zero disk writes)")
 
     with d_col2:
